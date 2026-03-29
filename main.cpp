@@ -79,9 +79,7 @@ void printDisplay() {
 int main() {
 	Chip8 chip;
 
-	chip.loadROM("ibm.ch8"); for (int i = 0; i < 20; i++) {
-    printf("%02X ", chip.memory[0x200 + i]);
-}
+	chip.loadROM("ibm.ch8");
 cout << endl;
 	bool running = true;
 
@@ -141,10 +139,8 @@ y_pos %= 32;
 					}
 					}
 				}
-static bool printed = false;
-if (!printed) {
     chip.printDisplay();
-}
+
 			break;
 		
 				     }}
