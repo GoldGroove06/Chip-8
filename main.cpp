@@ -13,7 +13,11 @@ class Chip8 {
 		unsigned short I = 0;
 		unsigned short pc = 0x200;
 		bool display[2048]={};  
-		
+		bool keypad[16] = {};
+		unsigned char delayTimer = 0;
+		unsigned char soundTimer = 0;
+		unsigned short stack[16];
+		unsigned short sp = 0;
 		unsigned char fontset[80] ={
 			0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
 0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -96,7 +100,13 @@ int main() {
 				// clear screen
 				if (opcode == 0x00E0){
 					memset(chip.display, 0, sizeof(chip.display));
-					}
+					}    if (opcode == 0x00ee) {
+
+        chip.sp--;                        // go back in stack
+        chip.pc = chip.stack[chip.sp];    // restore pc
+
+    }
+    
 				break;
 				}
 			
@@ -115,7 +125,15 @@ int main() {
 				chip.V[x] = opcode & 0x00FF;
 				break;
 				}
+case 0x2000: {  // 2NNN
 
+    chip.stack[chip.sp] = chip.pc;  // save current PC
+    chip.sp++;                      // move stack pointer
+
+    chip.pc = opcode & 0x0FFF;      // jump to subroutine
+
+    break;
+}
 			// set register VX to VY
 			case 0x8000:{
 				switch (opcode & 0x000F){
@@ -211,7 +229,103 @@ int main() {
 				}
 				break;
 				    }
-				
+			case 0xC000: {
+					 int random = rand() % 255;
+					 chip.V[x] = random & (opcode & 0x00FF);
+					 break;
+				     }
+
+			case 0xE000: {
+					     switch(opcode & 0x00FF):{
+						     case 0x9E:{
+								       if (chip.keypad[chip.V[x]]){
+									       chip += 2;
+								      break;
+								       }
+							       }
+						     case 0xA1:{ 
+							       if(!chip.keypad[chip.V[x]]){
+								       chip.pc +=2;
+							       }
+							       break;
+					     }
+							       break;
+
+					     }
+			case 0xF000: {
+					     switch (opcode & 0x00FF): {
+						     case 0x07:{
+								       chip.V[x] = chip.delayTimer;
+break;
+							       }
+						     case 0x15: {
+									chip.delayTimer = chip.V[x];
+									break;
+								}
+						     case 0x18:{
+								       chip.soundTimer = chip.V[x];
+								       break;
+							       }
+						     case 0x1E:{
+								       chip.I = chip.I + chip.V[x];
+								       break;
+							       }
+						     case 0x0A: {
+		
+            							bool keyPressed = false;
+            							for (int i = 0; i < 16; i++) {
+                						if (chip.keypad[i]) {
+                    							chip.V[x] = i;
+                    							keyPressed = true;
+                    							break;
+                							}
+           							 }
+
+            							if (!keyPressed) {
+                							chip.pc -= 2; 
+            								}
+            								break;
+        							
+							}
+
+						     case 0x29: {
+							chip.I = 0x50 + (chip.V[x] * 5);
+					     		break;
+								}
+						case 0x33: {
+
+            int value = chip.V[x];
+
+            chip.memory[chip.I]     = value / 100;
+            chip.memory[chip.I + 1] = (value / 10) % 10;
+            chip.memory[chip.I + 2] = value % 10;
+
+            break;
+        }
+
+case 0x55: {
+
+            for (int i = 0; i <= x; i++) {
+                chip.memory[chip.I + i] = chip.V[i];
+            }
+
+            break;
+        
+	 }
+
+case 0x65: { 
+
+            for (int i = 0; i <= x; i++) {
+                chip.V[i] = chip.memory[chip.I + i];
+            }
+
+            break;
+        }
+					     }
+					     break;
+				     }
+
+
 			//draw screen 
 			case 0xD000: {
 				chip.V[0XF] = 0;
