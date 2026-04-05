@@ -100,7 +100,7 @@ int main() {
 				// clear screen
 				if (opcode == 0x00E0){
 					memset(chip.display, 0, sizeof(chip.display));
-					}    if (opcode == 0x00ee) {
+					}    if (opcode == 0x00EE) {
 
         chip.sp--;                        // go back in stack
         chip.pc = chip.stack[chip.sp];    // restore pc
@@ -125,20 +125,20 @@ int main() {
 				chip.V[x] = opcode & 0x00FF;
 				break;
 				}
-case 0x2000: {  // 2NNN
+			case 0x2000: {  // 2NNN
 
-    chip.stack[chip.sp] = chip.pc;  // save current PC
-    chip.sp++;                      // move stack pointer
+				chip.stack[chip.sp] = chip.pc;  // save current PC
+				chip.sp++;                      // move stack pointer
 
-    chip.pc = opcode & 0x0FFF;      // jump to subroutine
+				chip.pc = opcode & 0x0FFF;      // jump to subroutine
 
-    break;
-}
+				break;
+			}
 			// set register VX to VY
 			case 0x8000:{
 				switch (opcode & 0x000F){
 					case 0x0: {
-					    	chip.V[y] = chip.V[x];
+					    	chip.V[x] = chip.V[y];
 						break;
 						  }
 
@@ -230,18 +230,19 @@ case 0x2000: {  // 2NNN
 				break;
 				    }
 			case 0xC000: {
-					 int random = rand() % 255;
+					 int random = rand() % 256;
 					 chip.V[x] = random & (opcode & 0x00FF);
 					 break;
 				     }
 
 			case 0xE000: {
-					     switch(opcode & 0x00FF):{
+					     switch(opcode & 0x00FF){
 						     case 0x9E:{
 								       if (chip.keypad[chip.V[x]]){
-									       chip += 2;
-								      break;
+									       chip.pc += 2;
+								      
 								       }
+								       break;
 							       }
 						     case 0xA1:{ 
 							       if(!chip.keypad[chip.V[x]]){
@@ -249,15 +250,16 @@ case 0x2000: {  // 2NNN
 							       }
 							       break;
 					     }
+						}
 							       break;
 
 					     }
-			case 0xF000: {
-					     switch (opcode & 0x00FF): {
-						     case 0x07:{
-								       chip.V[x] = chip.delayTimer;
-break;
-							       }
+						case 0xF000: {
+									switch (opcode & 0x00FF) {
+										case 0x07:{
+												chip.V[x] = chip.delayTimer;
+										break;
+								}
 						     case 0x15: {
 									chip.delayTimer = chip.V[x];
 									break;
@@ -294,32 +296,32 @@ break;
 								}
 						case 0x33: {
 
-            int value = chip.V[x];
+							int value = chip.V[x];
 
-            chip.memory[chip.I]     = value / 100;
-            chip.memory[chip.I + 1] = (value / 10) % 10;
-            chip.memory[chip.I + 2] = value % 10;
+							chip.memory[chip.I]     = value / 100;
+							chip.memory[chip.I + 1] = (value / 10) % 10;
+							chip.memory[chip.I + 2] = value % 10;
 
-            break;
-        }
+							break;
+						}
 
-case 0x55: {
+				case 0x55: {
 
-            for (int i = 0; i <= x; i++) {
-                chip.memory[chip.I + i] = chip.V[i];
-            }
+							for (int i = 0; i <= x; i++) {
+								chip.memory[chip.I + i] = chip.V[i];
+							}
 
-            break;
-        
-	 }
+							break;
+						
+					}
 
-case 0x65: { 
+				case 0x65: { 
 
-            for (int i = 0; i <= x; i++) {
-                chip.V[i] = chip.memory[chip.I + i];
-            }
+							for (int i = 0; i <= x; i++) {
+								chip.V[i] = chip.memory[chip.I + i];
+							}
 
-            break;
+							break;
         }
 					     }
 					     break;
