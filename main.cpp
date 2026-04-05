@@ -3,9 +3,10 @@
 #include<cstring>
 #include<vector>
 #include<fstream>
+#include <chrono>
+#include <thread>
 
 using namespace std;
-
 class Chip8 {
 	public:	
 		array<unsigned char, 4096> memory{};
@@ -62,7 +63,7 @@ class Chip8 {
 			void printDisplay() {
                                         for (int y = 0; y < 32; y++) {
                                                  for (int x = 0; x < 64; x++) {
-                                                        cout << (display[y * 64 + x] ? "#" : ".");
+                                                        cout << (display[y * 64 + x] ? "#" : " ");
                                                 }
                                         cout << "\n";
                                         }
@@ -83,14 +84,34 @@ class Chip8 {
 int main() {
 	Chip8 chip;
 
-	chip.loadROM("ibm.ch8");
+	chip.loadROM("Minimal_game.ch8");
 	cout << endl;
 	bool running = true;
-
+	auto lastTimerUpdate = std::chrono::high_resolution_clock::now();
+	
 	while(running) {
+		
+
 		// so the instructions are of 2 byte , this opcode is of a 4 nibble , 1 nibble is 4 bits , in pc counter it takes 2 bytes so we increment by 2
 		unsigned short opcode = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
 		chip.pc += 2;
+
+		auto now = std::chrono::high_resolution_clock::now();
+
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+			now - lastTimerUpdate
+		);
+
+		if (elapsed.count() >= 16) { 
+			if (chip.delayTimer > 0) chip.delayTimer--;
+			if (chip.soundTimer > 0) chip.soundTimer--;
+
+			lastTimerUpdate = now;
+		}
+
+		if (chip.soundTimer > 0) {
+			std::cout << "BEEP\n";
+}
 		int x = (opcode & 0x0F00) >> 8;
 		int y = (opcode & 0x00F0) >> 4;
 		int N = opcode & 0x000F;
@@ -349,14 +370,14 @@ int main() {
 					}
 					}
 				}
+			system("cls");
     			chip.printDisplay();
-
 			break;
+			
 		
 				     }}
 
 
-	
 	}	
 	return 0;		
 }
