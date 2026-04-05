@@ -55,7 +55,7 @@ class Chip8 {
     				}
 			}
 
-void printDisplay() {
+			void printDisplay() {
                                         for (int y = 0; y < 32; y++) {
                                                  for (int x = 0; x < 64; x++) {
                                                         cout << (display[y * 64 + x] ? "#" : ".");
@@ -80,7 +80,7 @@ int main() {
 	Chip8 chip;
 
 	chip.loadROM("ibm.ch8");
-cout << endl;
+	cout << endl;
 	bool running = true;
 
 	while(running) {
@@ -96,25 +96,119 @@ cout << endl;
 				// clear screen
 				if (opcode == 0x00E0){
 					memset(chip.display, 0, sizeof(chip.display));
+					}
+				break;
 				}
-			break;
-				    }
 			
-			// write to pc 
+			// write to pc (Jump to 0x0NNN)
 			case 0x1000:{
 				chip.pc = opcode & 0x0FFF;
 				break;
-				    }
+				}
+			// Add value to register VX 
 			case 0x7000: {
-    chip.V[x] += opcode & 0x00FF;
-    break;
-}
+    				chip.V[x] += opcode & 0x00FF;
+    				break;
+				}
+			// set register VX
 			case 0x6000:{
 				chip.V[x] = opcode & 0x00FF;
-				break;}
+				break;
+				}
 
+			// set register VX to VY
+			case 0x8000:{
+				switch (opcode & 0x000F){
+					case 0x0: {
+					    	chip.V[y] = chip.V[x];
+						break;
+						  }
+
+					case 0x1: {
+						chip.V[x] = chip.V[x] | chip.V[y];
+						break;
+						  }
+					case 0x2: {
+						chip.V[x] = chip.V[x] & chip.V[y];
+						break;
+						  }
+					case 0x3: {
+						chip.V[x] = chip.V[x] ^ chip.V[y];
+						break;
+						  }
+					case 0x4: {
+						int sum = chip.V[x] + chip.V[y];
+
+						if (sum >255) chip.V[0xF] = 1;
+						else chip.V[0xF] = 0;
+						chip.V[x] = sum & 0xFF;
+						break;
+						  }
+					case 0x5: {
+						if (chip.V[x] >= chip.V[y]) chip.V[0xF] = 1;
+						else chip.V[0xF] = 0;
+
+						chip.V[x] = chip.V[x] - chip.V[y];
+						break;
+						  }
+					case 0x7: {
+						if (chip.V[x] >= chip.V[y]) chip.V[0xF] = 1;
+						else chip.V[0xF] = 0;
+
+						chip.V[x] = chip.V[y] - chip.V[x];
+						break;
+						  }
+					case 0x6: {
+						chip.V[0xF] = chip.V[x] & 0x01;
+						chip.V[x] >>= 1;
+						break;
+						  }
+					case 0xE:  {
+						chip.V[0xF] = (chip.V[x] & 0x80) >> 7;
+						chip.V[x] <<= 1;
+						break;
+						  }
+						}
+				break;
+				}
+			//set register I 0xANNN
 			case 0xA000:{
 				chip.I = opcode & 0x0FFF;
+				break;
+				}
+			
+			// skip if 3xNN is equal to VX
+			case 0x3000:{
+				if (chip.V[x] == (opcode & 0x00FF)){
+					chip.pc += 2;
+				}
+				break;
+				    }
+			
+			// skip if not equal 4xNN to VX
+			case 0x4000:{
+				if(chip.V[x] != (opcode & 0x00FF)){
+					chip.pc += 2;
+				}
+				break;
+				    }
+
+			// skip if VX is equal to VY
+			case 0x5000:{
+				if ( (opcode & 0x000F) == 0){ 
+				if(chip.V[x] == chip.V[y]){
+					chip.pc += 2;
+				}
+				}
+				break;
+				    }
+			// skip if VX is equal to VY		    
+			case 0x9000:{
+				if ( (opcode & 0x000F) == 0){ 
+				if(chip.V[x] != chip.V[y]){
+					chip.pc += 2;
+				}
+				}
 				break;
 				    }
 				
@@ -129,7 +223,7 @@ cout << endl;
 						int x_pos = chip.V[x] + bit;
 						int y_pos = chip.V[y] + row;
 						x_pos %= 64;
-y_pos %= 32;
+						y_pos %= 32;
 						int index = y_pos *64 + x_pos;
 
 						if (chip.display[index] == 1) {
@@ -139,7 +233,7 @@ y_pos %= 32;
 					}
 					}
 				}
-    chip.printDisplay();
+    			chip.printDisplay();
 
 			break;
 		
