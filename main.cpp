@@ -5,6 +5,7 @@
 #include<fstream>
 #include <chrono>
 #include <thread>
+#include <conio.h>
 
 using namespace std;
 class Chip8 {
@@ -15,6 +16,7 @@ class Chip8 {
 		unsigned short pc = 0x200;
 		bool display[2048]={};  
 		bool keypad[16] = {};
+		bool drawFlag = false;
 		unsigned char delayTimer = 0;
 		unsigned char soundTimer = 0;
 		unsigned short stack[16];
@@ -81,37 +83,67 @@ class Chip8 {
 };
 
 
+void handleInput(Chip8 &chip) {
+    // reset all keys
+    memset(chip.keypad, 0, sizeof(chip.keypad));
+
+    if (_kbhit()) {
+        char key = _getch();
+
+        switch (key) {
+            case '1': chip.keypad[0x1] = 1; break;
+            case '2': chip.keypad[0x2] = 1; break;
+            case '3': chip.keypad[0x3] = 1; break;
+            case '4': chip.keypad[0xC] = 1; break;
+
+            case 'q': chip.keypad[0x4] = 1; break;
+            case 'w': chip.keypad[0x5] = 1; break;
+            case 'e': chip.keypad[0x6] = 1; break;
+            case 'r': chip.keypad[0xD] = 1; break;
+
+            case 'a': chip.keypad[0x7] = 1; break;
+            case 's': chip.keypad[0x8] = 1; break;
+            case 'd': chip.keypad[0x9] = 1; break;
+            case 'f': chip.keypad[0xE] = 1; break;
+
+            case 'z': chip.keypad[0xA] = 1; break;
+            case 'x': chip.keypad[0x0] = 1; break;
+            case 'c': chip.keypad[0xB] = 1; break;
+            case 'v': chip.keypad[0xF] = 1; break;
+        }
+    }
+}
+
 int main() {
 	Chip8 chip;
-
 	chip.loadROM("Minimal_game.ch8");
 	cout << endl;
 	bool running = true;
-	auto lastTimerUpdate = std::chrono::high_resolution_clock::now();
-	
+
+	    auto start = std::chrono::high_resolution_clock::now();
+ 
 	while(running) {
 		
+		// delay timer decremented 60Hz
+		auto end  = std::chrono::high_resolution_clock::now();
+		auto diff = end-start;
+		if (diff > std::chrono::milliseconds(17)){
+			if (chip.delayTimer > 0 ) {
+				chip.delayTimer = chip.delayTimer -1;
+			}
+			if (chip.soundTimer > 0){
+				chip.soundTimer  = chip.soundTimer -1;
+			}
+
+				start = std::chrono::high_resolution_clock::now();
+		}
+		handleInput(chip);	
 
 		// so the instructions are of 2 byte , this opcode is of a 4 nibble , 1 nibble is 4 bits , in pc counter it takes 2 bytes so we increment by 2
 		unsigned short opcode = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
 		chip.pc += 2;
 
-		auto now = std::chrono::high_resolution_clock::now();
 
-		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-			now - lastTimerUpdate
-		);
-
-		if (elapsed.count() >= 16) { 
-			if (chip.delayTimer > 0) chip.delayTimer--;
-			if (chip.soundTimer > 0) chip.soundTimer--;
-
-			lastTimerUpdate = now;
-		}
-
-		if (chip.soundTimer > 0) {
-			std::cout << "BEEP\n";
-}
 		int x = (opcode & 0x0F00) >> 8;
 		int y = (opcode & 0x00F0) >> 4;
 		int N = opcode & 0x000F;
@@ -352,7 +384,7 @@ int main() {
 			//draw screen 
 			case 0xD000: {
 				chip.V[0XF] = 0;
-
+				
 				for (int row = 0; row < N ; row++) {
 					unsigned char byte =chip.memory[chip.I + row];
 					for (int bit = 0; bit < 8 ; bit++){
@@ -370,14 +402,17 @@ int main() {
 					}
 					}
 				}
-			system("cls");
-    			chip.printDisplay();
-			break;
+				chip.drawFlag=true;
+				break;
 			
 		
 				     }}
 
-
+	if (chip.drawFlag) {
+		system("cls");
+		chip.printDisplay();
+		chip.drawFlag=false;
+	}
 	}	
 	return 0;		
 }
